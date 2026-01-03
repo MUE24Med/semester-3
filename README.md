@@ -18,7 +18,7 @@
 
 **الطريقة الأولى: تحميل مباشر (مُوصى بها)**
 
-[![تحميل ZIP](https://img.shields.io/badge/⬇️_تحميل-ZIP-yellow?style=for-the-badge)](https://github.com/MUE24Med/semester-3/archive/refs/heads/main.zip)
+[![Download ZIP](https://img.shields.io/badge/⬇️_تحميل-ZIP-yellow?style=for-the-badge)](https://github.com/MUE24Med/semester-3/archive/refs/heads/main.zip)
 
 **الطريقة الثانية: باستخدام Git**
 
