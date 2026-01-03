@@ -383,6 +383,15 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+function debounce(func, delay) {
+    let timeoutId;
+    return function() {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func.apply(this, arguments), delay);
+    };
+}
+
+/* --- 9. فتح الملفات --- */
 async function smartOpen(item) {
     if (!item || !item.path) return;
 
@@ -428,7 +437,7 @@ async function smartOpen(item) {
     }
 }
 
-/* --- 9. التنقل --- */
+/* --- 10. التنقل --- */
 window.goToWood = () => {
     if (scrollContainer) {
         scrollContainer.scrollTo({ left: 0, behavior: 'smooth' });
@@ -441,15 +450,7 @@ window.goToMapEnd = () => {
     scrollContainer.scrollTo({ left: maxScrollRight, behavior: 'smooth' });
 };
 
-function debounce(func, delay) {
-    let timeoutId;
-    return function() {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => func.apply(this, arguments), delay);
-    };
-}
-
-/* --- 10. تحديث الأحجام --- */
+/* --- 11. تحديث الأحجام --- */
 function updateDynamicSizes() {
     if (!mainSvg) return;
 
@@ -470,7 +471,7 @@ function updateDynamicSizes() {
 }
 window.updateDynamicSizes = updateDynamicSizes;
 
-/* --- 11. تأثيرات الهوفر --- */
+/* --- 12. تأثيرات الهوفر --- */
 function getCumulativeTranslate(element) {
     let x = 0, y = 0, current = element;
     while (current && current.tagName !== 'svg') {
@@ -607,7 +608,7 @@ function startHover() {
     }, 100);
 }
 
-/* --- 12. معالجة النصوص --- */
+/* --- 13. معالجة النصوص --- */
 function wrapText(el, maxW) {
     const txt = el.getAttribute('data-original-text');
     if (!txt) return;
@@ -636,7 +637,7 @@ function wrapText(el, maxW) {
     });
 }
 
-/* --- 13. دوال الترحيب والأسماء --- */
+/* --- 14. دوال الترحيب والأسماء --- */
 function getDisplayName() {
     const realName = localStorage.getItem('user_real_name');
     if (realName && realName.trim()) {
@@ -723,10 +724,8 @@ function renderNameInput() {
     dynamicGroup.appendChild(inputGroup);
 }
 
-/* --- 14. تحديث واجهة القوائم (مع إصلاح مشكلة التمرير) --- */
+/* --- 15. تحديث واجهة القوائم (مع التمرير المباشر المحسن) --- */
 async function updateWoodInterface() {
-    renderNameInput();
-
     const dynamicGroup = document.getElementById('dynamic-links-group');
     const groupBtnText = document.getElementById('group-btn-text');
     const backBtnText = document.getElementById('back-btn-text');
@@ -770,10 +769,6 @@ async function updateWoodInterface() {
         backBtnText.textContent = breadcrumb.length > 30 ?
             `🔙 ... > ${folderName} ${displayLabel}` :
             `🔙 ${breadcrumb} ${displayLabel}`;
-    }
-
-    if (currentFolder === "" && currentGroup) {
-        updateWoodLogo(currentGroup);
     }
 
     const folderPrefix = currentFolder ? currentFolder + '/' : '';
@@ -925,7 +920,6 @@ async function updateWoodInterface() {
 
             // ✅ إعادة تعيين عداد الملفات عند بداية مجلد جديد
             if (item.type === 'dir' && fileRowCounter > 0) {
-                // إذا كان هناك ملف في اليسار فقط، أكمل السطر
                 if (fileRowCounter % 2 === 1) {
                     yPosition += 90;
                 }
@@ -945,8 +939,6 @@ async function updateWoodInterface() {
 
             const y = yPosition;
 
-            // ✅ إنشاء العنصر دائمًا (سواء كان داخل النافذة أم لا)
-            // clip-path سيتولى إخفاء ما يخرج من النافذة
             const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
             g.setAttribute("class", item.type === 'dir' ? "wood-folder-group" : "wood-file-group");
             g.style.cursor = "pointer";
@@ -1022,8 +1014,18 @@ async function updateWoodInterface() {
                 g.appendChild(r);
                 g.appendChild(t);
 
+                // ✅ متغير لتتبع حالة السحب
+                let isDraggingContent = false;
+                let dragVelocity = 0;
+
                 g.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    
+                    // منع الفتح أثناء السحب
+                    if (isDraggingContent && Math.abs(dragVelocity) > 0.1) {
+                        return;
+                    }
+                    
                     if (item.type === 'dir') {
                         currentFolder = item.path;
                         updateWoodInterface();
@@ -1051,7 +1053,6 @@ async function updateWoodInterface() {
 
         subjectIndex++;
 
-        // ✅ إذا انتهت المادة وكان هناك ملف في اليسار فقط
         if (fileRowCounter % 2 === 1) {
             yPosition += 90;
             fileRowCounter = 0;
@@ -1060,11 +1061,27 @@ async function updateWoodInterface() {
 
     const totalContentHeight = yPosition - 250;
 
+    // ✅ تحديد ما إذا كنا بحاجة لشريط تمرير
+    const needsScroll = totalContentHeight > 1700;
+
+    // ✅ إخفاء أو إظهار اللوجو وزر تغيير الاسم بناءً على حالة التمرير
+    if (needsScroll) {
+        const woodBanner = dynamicGroup.querySelector('.wood-banner-animation');
+        const nameInputGroup = dynamicGroup.querySelector('.name-input-group');
+        if (woodBanner) woodBanner.style.display = 'none';
+        if (nameInputGroup) nameInputGroup.style.display = 'none';
+    } else {
+        renderNameInput();
+        if (currentFolder === "" && currentGroup) {
+            updateWoodLogo(currentGroup);
+        }
+    }
+
     // ✅ 4. إضافة المحتوى والخطوط
     scrollContainerGroup.appendChild(separatorGroup);
     scrollContainerGroup.appendChild(scrollContent);
 
-    // ✅ 5. نظام التمرير - الإصلاح الرئيسي هنا
+    // ✅ 5. نظام التمرير
     const maxScroll = Math.max(0, totalContentHeight - 1700);
     let scrollOffset = 0;
 
@@ -1074,7 +1091,6 @@ async function updateWoodInterface() {
         const scrollBarGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
         scrollBarGroup.setAttribute("class", "scroll-bar-group");
 
-        // خلفية شريط التمرير
         const scrollBarBg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         scrollBarBg.setAttribute("x", "910");
         scrollBarBg.setAttribute("y", "250");
@@ -1083,7 +1099,6 @@ async function updateWoodInterface() {
         scrollBarBg.setAttribute("rx", "6");
         scrollBarBg.style.fill = "rgba(255,255,255,0.1)";
 
-        // مقبض شريط التمرير
         const scrollBarHandle = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         scrollBarHandle.setAttribute("x", "910");
         scrollBarHandle.setAttribute("y", "250");
@@ -1099,74 +1114,106 @@ async function updateWoodInterface() {
         function updateScroll(newOffset) {
             scrollOffset = Math.max(0, Math.min(maxScroll, newOffset));
 
-            console.log(`🔄 التمرير إلى: ${Math.round(scrollOffset)}px (${Math.round((scrollOffset/maxScroll)*100)}%)`);
-
-            // ✅ تحريك المحتوى والخطوط معاً
             scrollContent.setAttribute("transform", `translate(0, ${-scrollOffset})`);
             separatorGroup.setAttribute("transform", `translate(0, ${-scrollOffset})`);
 
-            // ✅ تحديث مقبض التمرير
             const scrollRatio = scrollOffset / maxScroll;
             const handleY = 250 + (scrollRatio * (1700 - handleHeight));
             scrollBarHandle.setAttribute("y", handleY);
-
-            // ✅ تحقق: هل وصلنا للنهاية؟
-            if (scrollOffset >= maxScroll - 1) {
-                console.log("🎯 وصلنا لنهاية المحتوى!");
-            }
         }
 
-        // ✅ نظام التمرير 1: سحب المحتوى مباشرة
+        // ✅ نظام التمرير 1: سحب المحتوى مباشرة (محسّن)
         let isDraggingContent = false;
         let dragStartY = 0;
         let dragStartOffset = 0;
+        let dragVelocity = 0;
+        let lastDragY = 0;
+        let lastDragTime = 0;
 
-        const startContentDrag = (clientY) => {
+        const startContentDrag = (clientY, isTouch = false) => {
             isDraggingContent = true;
             dragStartY = clientY;
+            lastDragY = clientY;
+            lastDragTime = Date.now();
             dragStartOffset = scrollOffset;
+            dragVelocity = 0;
             scrollContent.style.cursor = 'grabbing';
+            
+            if (window.momentumAnimation) {
+                cancelAnimationFrame(window.momentumAnimation);
+                window.momentumAnimation = null;
+            }
         };
 
         const doContentDrag = (clientY) => {
             if (!isDraggingContent) return;
-            const deltaY = clientY - dragStartY;
-            const newOffset = dragStartOffset - deltaY;
-            updateScroll(newOffset);
+            
+            const now = Date.now();
+            const deltaTime = now - lastDragTime;
+            
+            if (deltaTime > 0) {
+                const deltaY = clientY - dragStartY;
+                const velocityDelta = clientY - lastDragY;
+                dragVelocity = velocityDelta / deltaTime;
+                
+                lastDragY = clientY;
+                lastDragTime = now;
+                
+                const newOffset = dragStartOffset - deltaY;
+                updateScroll(newOffset);
+            }
         };
 
         const endContentDrag = () => {
+            if (!isDraggingContent) return;
+            
             isDraggingContent = false;
             scrollContent.style.cursor = 'grab';
+            
+            // تطبيق حركة القصور الذاتي
+            if (Math.abs(dragVelocity) > 0.5) {
+                let velocity = dragVelocity * 200;
+                const deceleration = 0.95;
+                
+                function momentum() {
+                    velocity *= deceleration;
+                    
+                    if (Math.abs(velocity) > 0.5) {
+                        const newOffset = scrollOffset - velocity;
+                        updateScroll(newOffset);
+                        window.momentumAnimation = requestAnimationFrame(momentum);
+                    } else {
+                        window.momentumAnimation = null;
+                    }
+                }
+                
+                momentum();
+            }
         };
 
-        // أحداث الماوس للمحتوى
         scrollContent.addEventListener('mousedown', (e) => {
-            if (!e.target.closest('.wood-folder-group, .wood-file-group')) {
-                startContentDrag(e.clientY);
-                e.preventDefault();
-            }
+            startContentDrag(e.clientY, false);
+            e.preventDefault();
         });
 
         window.addEventListener('mousemove', (e) => {
-            doContentDrag(e.clientY);
+            if (isDraggingContent) {
+                doContentDrag(e.clientY);
+            }
         });
 
         window.addEventListener('mouseup', endContentDrag);
 
-        // أحداث اللمس للمحتوى
         scrollContent.addEventListener('touchstart', (e) => {
-            if (!e.target.closest('.wood-folder-group, .wood-file-group')) {
-                startContentDrag(e.touches[0].clientY);
-                e.preventDefault();
-            }
-        });
+            startContentDrag(e.touches[0].clientY, true);
+        }, { passive: true });
 
         window.addEventListener('touchmove', (e) => {
-            if (!isDraggingContent) return;
-            doContentDrag(e.touches[0].clientY);
-            e.preventDefault();
-        });
+            if (isDraggingContent) {
+                doContentDrag(e.touches[0].clientY);
+                e.preventDefault();
+            }
+        }, { passive: false });
 
         window.addEventListener('touchend', endContentDrag);
 
@@ -1213,17 +1260,18 @@ async function updateWoodInterface() {
             isDraggingHandle = false;
         });
 
-        // ✅ نظام التمرير 3: عجلة الماوس
+        // ✅ نظام التمرير 3: عجلة الماوس (محسّن)
         scrollContent.addEventListener('wheel', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            
+            if (window.momentumAnimation) {
+                cancelAnimationFrame(window.momentumAnimation);
+                window.momentumAnimation = null;
+            }
+            
             updateScroll(scrollOffset + e.deltaY * 0.8);
-        });
-
-        // ✅ اختبار: تحريك مباشر للنهاية
-        if (totalContentHeight > 1700) {
-            console.log(`🔍 يمكن التمرير حتى ${maxScroll}px للوصول لـ patho`);
-        }
+        }, { passive: false });
 
         scrollBarGroup.appendChild(scrollBarBg);
         scrollBarGroup.appendChild(scrollBarHandle);
@@ -1231,86 +1279,9 @@ async function updateWoodInterface() {
     }
 
     dynamicGroup.appendChild(scrollContainerGroup);
-
-    // ✅ اختبار: التمرير للنهاية بعد وقت قصير
-    setTimeout(() => {
-        const maxScroll = Math.max(0, totalContentHeight - 1700);
-        if (maxScroll > 100) {
-            console.log(`🚀 المحتوى طويل (${totalContentHeight}px)، يمكن التمرير للنهاية`);
-        }
-    }, 500);
 }
 
-// ✅ CSS محسن للتأكد من عمل التمرير
-function addFixedScrollStyles() {
-    if (document.getElementById('fixed-scroll-styles')) return;
-
-    const style = document.createElement('style');
-    style.id = 'fixed-scroll-styles';
-    style.textContent = `
-        /* ✅ التأكد من أن clip-path يعمل */
-        .scrollable-content {
-            transition: transform 0.15s ease-out;
-            overflow: visible !important;
-        }
-        
-        .scrollable-content:active {
-            cursor: grabbing;
-        }
-        
-        /* ✅ شريط التمرير أكثر وضوحاً */
-        .scroll-handle {
-            transition: y 0.1s ease-out;
-        }
-        
-        .scroll-handle:hover {
-            fill: #ffd54f !important;
-            filter: drop-shadow(0 0 5px rgba(255, 213, 79, 0.7));
-        }
-        
-        /* ✅ التأكد من أن clip-path لا يقطع بشكل مفرط */
-        .scrollable-content[clip-path],
-        .subject-separator-group[clip-path] {
-            clip-path: inherit;
-            -webkit-clip-path: inherit;
-        }
-        
-        /* ✅ تحسين اللمس على الهواتف */
-        @media (hover: none) {
-            .scrollable-content {
-                -webkit-overflow-scrolling: touch;
-            }
-            
-            .scroll-handle {
-                width: 16px !important;
-                x: 908px !important;
-            }
-        }
-        
-        /* ✅ مؤشر عند الوصول للنهاية */
-        .scroll-container-group:after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 120px;
-            right: 120px;
-            height: 5px;
-            background: linear-gradient(90deg, transparent, #ffcc00, transparent);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .scroll-container-group.at-bottom:after {
-            opacity: 0.5;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-// استدعاء إضافة الأنماط
-document.addEventListener('DOMContentLoaded', addFixedScrollStyles);
-
-/* --- 15. معالجة المستطيلات مع الأسماء العربية --- */
+/* --- 16. معالجة المستطيلات مع الأسماء العربية --- */
 function processRect(r) {
     if (r.hasAttribute('data-processed')) return;
     if (r.classList.contains('w')) r.setAttribute('width', '113.5');
@@ -1454,7 +1425,7 @@ function processRect(r) {
     r.setAttribute('data-processed', 'true');
 }
 
-/* --- 16. فحص ومعالجة جميع المستطيلات --- */
+/* --- 17. فحص ومعالجة جميع المستطيلات --- */
 function scan() {
     if (!mainSvg) return;
 
@@ -1476,7 +1447,7 @@ function scan() {
 }
 window.scan = scan;
 
-/* --- 17. تحميل الصور مع تتبع التقدم --- */
+/* --- 18. تحميل الصور مع تتبع التقدم --- */
 function loadImages() {
     if (!mainSvg) return;
 
@@ -1569,7 +1540,7 @@ function finishLoading() {
 }
 window.loadImages = loadImages;
 
-/* --- 18. مستمعي الأحداث --- */
+/* --- 19. مستمعي الأحداث --- */
 document.querySelectorAll('.group-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         const group = this.getAttribute('data-group');
@@ -1686,7 +1657,7 @@ if (mainSvg) {
     }, false);
 }
 
-/* --- 19. البدء التلقائي --- */
+/* --- 20. البدء التلقائي --- */
 
 if (!localStorage.getItem('visitor_id')) {
     const newId = 'ID-' + Math.floor(1000 + Math.random() * 9000);
@@ -1704,31 +1675,75 @@ if (hasSavedGroup) {
     }
 }
 
-/* --- 20. إضافة أنماط CSS للنافذة الخفية --- */
-function addHiddenWindowStyles() {
-    if (document.getElementById('hidden-window-styles')) return;
+/* --- 21. إضافة أنماط CSS للتمرير المحسن --- */
+function addFixedScrollStyles() {
+    if (document.getElementById('fixed-scroll-styles')) return;
 
     const style = document.createElement('style');
-    style.id = 'hidden-window-styles';
+    style.id = 'fixed-scroll-styles';
     style.textContent = `
+        /* ✅ التأكد من أن clip-path يعمل */
         .scrollable-content {
-            transition: transform 0.15s ease-out;
+            transition: transform 0.1s ease-out;
+            overflow: visible !important;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
         }
         
         .scrollable-content:active {
             cursor: grabbing;
         }
         
-        .wood-folder-group:hover rect,
-        .wood-file-group:hover rect {
-            filter: drop-shadow(0 0 8px rgba(255, 204, 0, 0.5));
+        .scrollable-content * {
+            pointer-events: auto;
         }
         
-        .window-frame {
-            display: none !important;
+        /* ✅ شريط التمرير أكثر وضوحاً */
+        .scroll-handle {
+            transition: y 0.1s ease-out;
+        }
+        
+        .scroll-handle:hover {
+            fill: #ffd54f !important;
+            filter: drop-shadow(0 0 5px rgba(255, 213, 79, 0.7));
+        }
+        
+        /* ✅ التأكد من أن clip-path لا يقطع بشكل مفرط */
+        .scrollable-content[clip-path],
+        .subject-separator-group[clip-path] {
+            clip-path: inherit;
+            -webkit-clip-path: inherit;
+        }
+        
+        /* ✅ تحسين اللمس على الهواتف */
+        @media (hover: none) {
+            .scrollable-content {
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .scroll-handle {
+                width: 16px !important;
+                x: 908px !important;
+            }
+        }
+        
+        /* ✅ hover للعناصر */
+        .wood-folder-group:hover rect,
+        .wood-file-group:hover rect {
+            stroke-width: 2 !important;
+            filter: brightness(1.2) drop-shadow(0 0 8px rgba(255, 204, 0, 0.5));
+        }
+        
+        .wood-folder-group:active,
+        .wood-file-group:active {
+            transform: scale(0.98);
         }
     `;
     document.head.appendChild(style);
 }
 
-document.addEventListener('DOMContentLoaded', addHiddenWindowStyles);
+// استدعاء إضافة الأنماط
+document.addEventListener('DOMContentLoaded', addFixedScrollStyles);
+
+console.log('✅ تم تحميل script.js بالكامل');
