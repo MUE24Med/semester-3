@@ -276,7 +276,7 @@ const UserTracker = {
         });
     },
 
-    // ✅ 12. إرسال البيانات مع البصمة الفريدة (13 حقل فقط)
+    // ✅ 12. إرسال البيانات مع البصمة الفريدة
     async send(action, isFinal = false) {
         // التأكد من توليد البصمة
         if (!this.deviceFingerprint) {
@@ -285,28 +285,30 @@ const UserTracker = {
 
         const data = new FormData();
         
-        // ✅ البيانات الأساسية (الأهم)
+        // ✅ البيانات الرئيسية (مع Device Fingerprint)
         data.append("01-Device_ID", this.deviceFingerprint); // 🔒 البصمة الفريدة
         data.append("02-User_Name", this.getDisplayName());
-        data.append("03-Group", localStorage.getItem('selectedGroup') || 'لم يختر بعد');
-        data.append("04-Action", action);
+        data.append("03-Visitor_ID", localStorage.getItem('visitor_id') || 'Unknown');
+        data.append("04-Group", localStorage.getItem('selectedGroup') || 'لم يختر بعد');
+        data.append("05-Action", action);
 
         // ✅ ملخص الأنشطة (إن وجد)
         if (isFinal && this.activities.length > 0) {
-            data.append("05-Activities", JSON.stringify(this.activities, null, 2));
-        } else {
-            data.append("05-Activities", "لا توجد أنشطة");
+            data.append("06-Activities", JSON.stringify(this.activities, null, 2));
         }
 
-        // ✅ معلومات الجهاز (الأهم فقط)
-        data.append("06-Browser", this.getBrowserName());
-        data.append("07-OS", this.getOS());
-        data.append("08-Device_Type", navigator.userAgent.includes("Mobi") ? "Mobile 📱" : "Desktop 🖥️");
+        // ✅ معلومات الجهاز
+        data.append("07-Browser", this.getBrowserName());
+        data.append("08-OS", this.getOS());
         data.append("09-Screen", `${screen.width}x${screen.height}`);
-        data.append("10-Timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
-        data.append("11-Language", navigator.language);
-        data.append("12-Connection", this.getConnectionInfo());
-        data.append("13-Timestamp", new Date().toLocaleString('ar-EG'));
+        data.append("10-Viewport", `${window.innerWidth}x${window.innerHeight}`);
+        data.append("11-PixelRatio", window.devicePixelRatio || 1);
+        data.append("12-Timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
+        data.append("13-Language", navigator.language);
+        data.append("14-Connection", this.getConnectionInfo());
+        data.append("15-Device_Type", navigator.userAgent.includes("Mobi") ? "Mobile" : "Desktop");
+        data.append("16-Touch", navigator.maxTouchPoints > 0 ? "Yes" : "No");
+        data.append("17-Timestamp", new Date().toLocaleString('ar-EG'));
 
         // ✅ إرسال البيانات
         navigator.sendBeacon("https://formspree.io/f/xzdpqrnj", data);
