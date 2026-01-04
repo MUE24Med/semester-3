@@ -81,9 +81,11 @@ if (jsToggle) {
 
 /* --- 2. دوال مساعدة للنصوص العربية --- */
 
-// ✅ دالة تطبيع النص العربي (إزالة التشكيل والهمزات)
+// ✅ دالة تطبيع النص العربي (إزالة التشكيل والهمزات) - محدثة
 function normalizeArabic(text) {
     if (!text) return '';
+    // تحويل النص إلى سلسلة نصية أولاً (لدعم الأرقام)
+    text = String(text);
     return text
         .replace(/[أإآ]/g, 'ا')
         .replace(/[ىي]/g, 'ي')
@@ -1020,12 +1022,12 @@ async function updateWoodInterface() {
 
                 g.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    
+
                     // منع الفتح أثناء السحب
                     if (isDraggingContent && Math.abs(dragVelocity) > 0.1) {
                         return;
                     }
-                    
+
                     if (item.type === 'dir') {
                         currentFolder = item.path;
                         updateWoodInterface();
@@ -1138,7 +1140,7 @@ async function updateWoodInterface() {
             dragStartOffset = scrollOffset;
             dragVelocity = 0;
             scrollContent.style.cursor = 'grabbing';
-            
+
             if (window.momentumAnimation) {
                 cancelAnimationFrame(window.momentumAnimation);
                 window.momentumAnimation = null;
@@ -1147,18 +1149,18 @@ async function updateWoodInterface() {
 
         const doContentDrag = (clientY) => {
             if (!isDraggingContent) return;
-            
+
             const now = Date.now();
             const deltaTime = now - lastDragTime;
-            
+
             if (deltaTime > 0) {
                 const deltaY = clientY - dragStartY;
                 const velocityDelta = clientY - lastDragY;
                 dragVelocity = velocityDelta / deltaTime;
-                
+
                 lastDragY = clientY;
                 lastDragTime = now;
-                
+
                 const newOffset = dragStartOffset - deltaY;
                 updateScroll(newOffset);
             }
@@ -1166,18 +1168,18 @@ async function updateWoodInterface() {
 
         const endContentDrag = () => {
             if (!isDraggingContent) return;
-            
+
             isDraggingContent = false;
             scrollContent.style.cursor = 'grab';
-            
+
             // تطبيق حركة القصور الذاتي
             if (Math.abs(dragVelocity) > 0.5) {
                 let velocity = dragVelocity * 200;
                 const deceleration = 0.95;
-                
+
                 function momentum() {
                     velocity *= deceleration;
-                    
+
                     if (Math.abs(velocity) > 0.5) {
                         const newOffset = scrollOffset - velocity;
                         updateScroll(newOffset);
@@ -1186,7 +1188,7 @@ async function updateWoodInterface() {
                         window.momentumAnimation = null;
                     }
                 }
-                
+
                 momentum();
             }
         };
@@ -1264,12 +1266,12 @@ async function updateWoodInterface() {
         scrollContent.addEventListener('wheel', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            
+
             if (window.momentumAnimation) {
                 cancelAnimationFrame(window.momentumAnimation);
                 window.momentumAnimation = null;
             }
-            
+
             updateScroll(scrollOffset + e.deltaY * 0.8);
         }, { passive: false });
 
@@ -1570,10 +1572,14 @@ if (searchInput) {
         }  
     };  
 
+    // ✅ مستمع البحث المحدث - يدعم الأرقام والحروف المفردة
     searchInput.addEventListener('input', debounce(function(e) {  
         if (!mainSvg) return;  
 
         const query = normalizeArabic(e.target.value);  
+        
+        // إذا كان البحث فارغاً، أظهر كل شيء
+        const isEmptySearch = query.length === 0;
 
         mainSvg.querySelectorAll('rect.m:not(.list-item)').forEach(rect => {  
             const href = rect.getAttribute('data-href') || '';  
@@ -1592,11 +1598,17 @@ if (searchInput) {
                 return;  
             }  
 
-            if (query.length > 0) {  
-                const isMatch =   
-                    normalizeArabic(href).includes(query) ||   
-                    normalizeArabic(fullText).includes(query) ||  
-                    normalizeArabic(autoArabic).includes(query);  
+            if (!isEmptySearch) {  
+                // ✅ تطبيع جميع النصوص للمقارنة
+                const normalizedHref = normalizeArabic(href);
+                const normalizedFullText = normalizeArabic(fullText);
+                const normalizedFileName = normalizeArabic(fileName);
+                const normalizedAutoArabic = normalizeArabic(autoArabic);
+                
+                const isMatch = normalizedHref.includes(query) ||   
+                              normalizedFullText.includes(query) ||
+                              normalizedFileName.includes(query) ||
+                              normalizedAutoArabic.includes(query);  
 
                 rect.style.display = isMatch ? '' : 'none';  
                 if (label) label.style.display = rect.style.display;   
@@ -1746,4 +1758,4 @@ function addFixedScrollStyles() {
 // استدعاء إضافة الأنماط
 document.addEventListener('DOMContentLoaded', addFixedScrollStyles);
 
-console.log('✅ تم تحميل script.js بالكامل');
+console.log('✅ تم تحميل script.js بالكامل - إصدار محدث مع دعم البحث بالأرقام والحروف المفردة');
