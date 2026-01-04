@@ -719,9 +719,115 @@ image[data-src*="wood.webp"] {
   touch-action: none;
 }
 
-/* ===== تحسينات الأداء ===== */
-.scrollable-content * {
+/* ===== تحسينات الأداء Performance ===== */
+
+/* Critical Rendering Path */
+.wood-layer,
+#main-svg,
+.scrollable-content {
+  contain: layout style paint;
+}
+
+/* GPU Acceleration */
+.wood-banner-animation,
+.group-btn,
+.scroll-handle {
   will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Smooth Scrolling */
+@supports (scroll-behavior: smooth) {
+  #scroll-container {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ===== تحسينات Accessibility ===== */
+
+/* Focus Visible للوحة المفاتيح */
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible {
+  outline: 3px solid #ffcc00;
+  outline-offset: 2px;
+}
+
+/* إخفاء outline للماوس فقط */
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ===== Dark Mode Protection ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: only light !important;
+  }
+  
+  * {
+    color-scheme: only light !important;
+  }
+}
+
+/* ===== Print Styles ===== */
+@media print {
+  #js-toggle-container,
+  #loading-overlay,
+  #group-selection-screen,
+  #pdf-overlay {
+    display: none !important;
+  }
+  
+  #scroll-container {
+    overflow: visible !important;
+  }
+}
+
+/* ===== تحسينات التمرير المحسن ===== */
+.scrollable-content {
+  transition: transform 0.1s ease-out;
+  overflow: visible !important;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.scrollable-content:active {
+  cursor: grabbing;
+}
+
+.scrollable-content * {
+  pointer-events: auto;
+}
+
+/* شريط التمرير أكثر وضوحاً */
+.scroll-handle {
+  transition: y 0.1s ease-out;
+}
+
+.scroll-handle:hover {
+  fill: #ffd54f !important;
+  filter: drop-shadow(0 0 5px rgba(255, 213, 79, 0.7));
+}
+
+/* التأكد من أن clip-path لا يقطع بشكل مفرط */
+.scrollable-content[clip-path],
+.subject-separator-group[clip-path] {
+  clip-path: inherit;
+  -webkit-clip-path: inherit;
+}
+
+/* تحسين اللمس على الهواتف */
+@media (hover: none) {
+  .scrollable-content {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .scroll-handle {
+    width: 16px !important;
+    x: 908px !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -731,5 +837,11 @@ image[data-src*="wood.webp"] {
 
   .scroll-container-group rect[x="910"] {
     transition: fill 0.2s ease;
+  }
+  
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
